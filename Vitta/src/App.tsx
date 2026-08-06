@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Wallet, DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
 import { TransactionTracker, Transaction } from './components/TransactionTracker';
 import { BudgetAnalytics } from './components/BudgetAnalytics';

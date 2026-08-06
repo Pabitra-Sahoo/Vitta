@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { PlusCircle, Trash2, ArrowUpRight, ArrowDownRight, Search, AlertTriangle } from 'lucide-react';
 
 export type TransactionType = 'income' | 'expense';
@@ -62,7 +62,7 @@ export const TransactionTracker: React.FC<TransactionTrackerProps> = ({
   );
 
   return (
-    <div className="card" role="region" aria-label="Transaction Ledger" style={{ display: 'flex', flexDirection: 'column', maxHeight: '560px' }}>
+    <div className="card card-scrollable" role="region" aria-label="Transaction Ledger">
       <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.2rem', color: '#f8fafc' }}>Add New Transaction</h3>
 
       <form onSubmit={handleAdd} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.25rem' }}>
@@ -127,21 +127,9 @@ export const TransactionTracker: React.FC<TransactionTrackerProps> = ({
 
       {/* Delete Confirmation Banner */}
       {txToDelete && (
-        <div
-          style={{
-            background: 'rgba(239, 68, 68, 0.15)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: '10px',
-            padding: '0.75rem 1rem',
-            marginBottom: '0.75rem',
-            display: 'flex',
-            alignItems: 'center',
-            justify-content: 'space-between',
-          }}
-          role="alert"
-        >
+        <div className="delete-banner" role="alert">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#f87171' }}>
-            <AlertTriangle size={18} /> Delete "{txToDelete.title.slice(0, 18)}..." (${txToDelete.amount})?
+            <AlertTriangle size={18} /> Delete transaction: {txToDelete.title.slice(0, 18)} (${txToDelete.amount})?
           </div>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button
@@ -161,7 +149,7 @@ export const TransactionTracker: React.FC<TransactionTrackerProps> = ({
       )}
 
       {/* Fixed Container Height + Internal Scrollable Ledger */}
-      <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.25rem' }}>
+      <div className="scrollable-list">
         {filteredTransactions.length === 0 ? (
           <p role="status" style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem', padding: '1rem 0' }}>
             No transactions found matching "{search}"
