@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Wallet, Sun, Moon, LayoutDashboard, BarChart3, ReceiptText, Activity } from 'lucide-react';
+import { Wallet, Sun, Moon, LayoutDashboard, BarChart3, ReceiptText, Activity, Bot, Code2 } from 'lucide-react';
 
 export function Navbar() {
   const pathname = usePathname();
@@ -26,6 +26,8 @@ export function Navbar() {
 
   const navLinks = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/chat', label: 'AI Chat (FE-06)', icon: Bot },
+    { href: '/playground', label: 'Playground (FE-05)', icon: Code2 },
     { href: '/analytics', label: 'Analytics', icon: BarChart3 },
     { href: '/ledger', label: 'Ledger', icon: ReceiptText },
     { href: '/health', label: 'Health', icon: Activity },
