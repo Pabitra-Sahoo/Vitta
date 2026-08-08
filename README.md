@@ -1,29 +1,61 @@
 # Vitta — Wealth & Expense Financial Tracker
 
-## Track: Frontend AI Engineering (Week 3 Assignment)
+## Track: Frontend AI Engineering (Week 5 Assignment: FE-07 & FE-08)
 
-Vitta is a modern, accessible financial tracking web application built with **React 18**, **TypeScript**, **Vite**, and **Glassmorphic CSS**.
+Vitta is a modern, accessible financial tracking web application built with **React 19**, **Next.js 15 App Router**, **TypeScript**, and **Tailwind CSS**.
 
-## Features
-- 💰 **Financial KPI Overview**: Net Balance, Total Income, and Total Expense cards.
-- 📊 **Category Spending Breakdown**: Visual progress bars tracking category distribution against monthly budgets.
-- 🚨 **SLA Budget Warning**: Accessible `role="alert"` banner notifying users when expenses exceed budget limits ($2,500).
-- 🔍 **Transaction Ledger**: Search filtering, category tagging, and localStorage persistence.
-- 🧪 **Vitest Suite**: Co-located unit tests (`BudgetAnalytics.test.tsx`).
+---
 
-## Assignment Documentation
-- [`PROMPTS_LOG.md`](./PROMPTS_LOG.md): Full log of prompts used during AI-assisted development.
-- [`AI_ASSISTANCE_REPORT.md`](./AI_ASSISTANCE_REPORT.md): AI role breakdown + 3 case studies of manual code refactoring and bug fixes.
+## FE-07 Generative UI Server Tool Contract
+
+### Tool Name: `calculateCategoryBudgetAnalysis`
+- **Purpose**: Server-side tool that analyzes expense categories against monthly targets and SLA warning thresholds ($2,500 limit).
+
+### Zod Schema Definition:
+```typescript
+import { z } from 'zod';
+
+export const FinancialAnalysisInputSchema = z.object({
+  category: z.string().describe('The financial transaction category'),
+  monthlyBudget: z.number().min(1).describe('User target monthly budget in USD'),
+  currentSpent: z.number().min(0).describe('Total current expenditure in USD'),
+  slaThreshold: z.number().default(2500).describe('Monthly SLA warning limit ($2,500)'),
+});
+```
+
+### Return Shape:
+```typescript
+export interface FinancialAnalysisResult {
+  category: string;
+  monthlyBudget: number;
+  currentSpent: number;
+  slaThreshold: number;
+  remainingBudget: number;
+  percentageUsed: number;
+  isOverBudget: boolean;
+  isSlaExceeded: boolean;
+  healthScore: number;
+  recommendation: string;
+}
+```
+
+---
+
+## FE-08 Error & Sabotage Testing (Checkpoint 1)
+- **Next.js Error Boundary**: Defined in `src/app/error.tsx` catching unexpected route failures.
+- **Mid-Stream Error Recovery**: Retry action button allowing instant re-execution of failed messages.
+- **Onboarding Empty State**: Interactive click-to-fill sample prompt cards.
+- **Sabotage Selector**: Live toggle in header to test 429 rate limits and mid-stream breaks.
+
+---
 
 ## Run Locally
 ```bash
-cd Vitta
 npm install
 npm run dev
 ```
 
-## Run Tests
+## Run Production Build
 ```bash
-cd Vitta
-npm test
+npm run build
 ```

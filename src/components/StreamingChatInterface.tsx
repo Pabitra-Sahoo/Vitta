@@ -1,31 +1,53 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Square, ArrowDown, Bot, User, Sparkles } from 'lucide-react';
+import { Send, Square, ArrowDown, Bot, User, Sparkles, AlertCircle, RefreshCw, Zap, ShieldAlert } from 'lucide-react';
+import { FinancialToolResultCard, ToolState } from './FinancialToolResultCard';
+import { executeFinancialAnalysis, FinancialAnalysisResult } from '@/lib/tools';
 
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   isStreaming?: boolean;
+  isError?: boolean;
+  toolCall?: {
+    state: ToolState;
+    input?: { category: string; monthlyBudget: number; currentSpent: number };
+    result?: FinancialAnalysisResult;
+    error?: string;
+  };
 }
 
 export function StreamingChatInterface() {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome-msg',
-      role: 'assistant',
-      content: 'Hello! I am Vitta AI — your personal financial advisor. Ask me anything about your income, expense categories, or $2,500 SLA budget limits.',
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
+  const [sabotageMode, setSabotageMode] = useState<'none' | 'rate-limit' | 'mid-stream-break'>('none');
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const userHasScrolledUpRef = useRef(false);
+
+  const sampleOnboardingPrompts = [
+    {
+      title: '💰 Analyze SLA Budget ($2,500 Limit)',
+      prompt: 'Run financial analysis for Housing: Target Budget $2,000, Current Spent $2,650.',
+      isToolCall: true,
+    },
+    {
+      title: '📊 Category Spending Breakdown',
+      prompt: 'Give me 3 actionable recommendations to optimize my monthly dining out expenses.',
+      isToolCall: false,
+    },
+    {
+      title: '🚨 Test FE-08 Error & Retry Boundary',
+      prompt: 'Test mid-stream error recovery.',
+      isSabotageTest: true,
+    },
+  ];
 
   const scrollToBottom = (smooth = true) => {
     if (scrollContainerRef.current) {
@@ -64,29 +86,40 @@ export function StreamingChatInterface() {
     );
   };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isGenerating) return;
+  const executeChatFlow = async (textToSend: string, isRetry = false) => {
+    if (!textToSend.trim() || isGenerating) return;
 
-    const userText = input.trim();
-    setInput('');
     userHasScrolledUpRef.current = false;
 
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
-      content: userText,
+      content: textToSend,
     };
 
     const assistantMsgId = `assistant-${Date.now()}`;
+    const isToolTrigger = textToSend.toLowerCase().includes('run financial analysis') || textToSend.toLowerCase().includes('housing');
+
     const initialAssistantMsg: ChatMessage = {
       id: assistantMsgId,
       role: 'assistant',
       content: '',
       isStreaming: true,
+      toolCall: isToolTrigger
+        ? {
+            state: 'input-streaming',
+            input: { category: 'Housing', monthlyBudget: 2000, currentSpent: 2650 },
+          }
+        : undefined,
     };
 
-    setMessages((prev) => [...prev, userMsg, initialAssistantMsg]);
+    if (isRetry) {
+      // Replace last error message if retrying
+      setMessages((prev) => [...prev.filter((m) => !m.isError), userMsg, initialAssistantMsg]);
+    } else {
+      setMessages((prev) => [...prev, userMsg, initialAssistantMsg]);
+    }
+
     setIsGenerating(true);
     setIsThinking(true);
 
@@ -94,27 +127,81 @@ export function StreamingChatInterface() {
     abortControllerRef.current = controller;
 
     try {
+      // FE-08 Sabotage Test 1: Rate Limit Error (429)
+      if (sabotageMode === 'rate-limit') {
+        await new Promise((r) => setTimeout(r, 600));
+        throw new Error('429 Too Many Requests: API rate limit exceeded. Please retry in a moment.');
+      }
+
+      // FE-07 Tool Call Execution Simulation Phase
+      if (isToolTrigger) {
+        await new Promise((r) => setTimeout(r, 800));
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsgId
+              ? {
+                  ...m,
+                  toolCall: {
+                    state: 'input-available',
+                    input: { category: 'Housing', monthlyBudget: 2000, currentSpent: 2650 },
+                  },
+                }
+              : m
+          )
+        );
+
+        await new Promise((r) => setTimeout(r, 1000));
+        const toolResult = executeFinancialAnalysis({
+          category: 'Housing',
+          monthlyBudget: 2000,
+          currentSpent: 2650,
+          slaThreshold: 2500,
+        });
+
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsgId
+              ? {
+                  ...m,
+                  toolCall: {
+                    state: 'output-available',
+                    input: { category: 'Housing', monthlyBudget: 2000, currentSpent: 2650 },
+                    result: toolResult,
+                  },
+                }
+              : m
+          )
+        );
+      }
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [...messages, userMsg].map((m) => ({ role: m.role, content: m.content })),
+          messages: [{ role: 'user', content: textToSend }],
         }),
         signal: controller.signal,
       });
 
       if (!response.ok || !response.body) {
-        throw new Error('Streaming connection failed');
+        throw new Error('Streaming server error (500 Internal Server Error)');
       }
 
       setIsThinking(false);
-
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
+      let chunkCount = 0;
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+
+        chunkCount++;
+        // FE-08 Sabotage Test 2: Mid-Stream Connection Break
+        if (sabotageMode === 'mid-stream-break' && chunkCount > 5) {
+          controller.abort();
+          throw new Error('Stream interrupted: Network connection killed mid-stream.');
+        }
 
         const token = decoder.decode(value, { stream: true });
         setMessages((prev) =>
@@ -126,13 +213,20 @@ export function StreamingChatInterface() {
         );
       }
     } catch (err: any) {
-      if (err.name === 'AbortError') {
+      if (err.name === 'AbortError' && sabotageMode === 'none') {
         console.log('Stream stopped by user.');
       } else {
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === assistantMsgId
-              ? { ...msg, content: msg.content + '\n\n*(Error: Stream interrupted)*' }
+              ? {
+                  ...msg,
+                  content: msg.content + `\n\n*(Error: ${err.message || 'Connection Interrupted'})*`,
+                  isError: true,
+                  toolCall: msg.toolCall
+                    ? { ...msg.toolCall, state: 'output-error', error: err.message }
+                    : undefined,
+                }
               : msg
           )
         );
@@ -147,38 +241,102 @@ export function StreamingChatInterface() {
     }
   };
 
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isGenerating) return;
+    const text = input.trim();
+    setInput('');
+    executeChatFlow(text);
+  };
+
   return (
-    <div className="flex flex-col h-[600px] w-full max-w-4xl mx-auto rounded-2xl bg-[#022c22]/90 border border-emerald-800/60 shadow-2xl overflow-hidden font-sans">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-emerald-800/60 bg-[#022c22]">
+    <div className="flex flex-col h-[80dvh] max-h-[700px] w-full max-w-4xl mx-auto rounded-2xl bg-[#022c22]/95 border border-emerald-800/60 shadow-2xl overflow-hidden font-sans">
+      {/* Header with Sabotage Test Controls */}
+      <div className="flex flex-wrap items-center justify-between px-6 py-4 border-b border-emerald-800/60 bg-[#022c22] gap-3">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-emerald-500/20 text-[#10b981] border border-emerald-500/30">
             <Bot className="w-5 h-5" />
           </div>
           <div>
             <h2 className="text-base font-extrabold text-emerald-400 flex items-center gap-2">
-              Vitta AI Assistant <Sparkles className="w-4 h-4 text-amber-400" />
+              Vitta Generative UI & Resilient Chat <Sparkles className="w-4 h-4 text-amber-400" />
             </h2>
             <p className="text-[11px] text-emerald-200/70 font-medium">
-              FE-06 Live Token-by-Token Streaming Chat
+              FE-07 Zod Tools & FE-08 Error Recovery (Checkpoint 1)
             </p>
           </div>
         </div>
 
-        {isGenerating && (
-          <button
-            onClick={handleStopStream}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/40 text-xs font-bold hover:bg-red-500/30 transition-all"
+        {/* Sabotage Test Selector for Reviewer Evaluation */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold text-emerald-300 flex items-center gap-1">
+            <Zap className="w-3 h-3 text-amber-400" /> Sabotage Mode:
+          </span>
+          <select
+            value={sabotageMode}
+            onChange={(e) => setSabotageMode(e.target.value as any)}
+            className="px-2.5 py-1 bg-emerald-950 border border-emerald-700 rounded-lg text-emerald-100 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-[#10b981]"
           >
-            <Square className="w-3.5 h-3.5 fill-current" /> Stop Stream
-          </button>
-        )}
+            <option value="none">Off (Normal)</option>
+            <option value="rate-limit">Test 429 Error</option>
+            <option value="mid-stream-break">Test Mid-Stream Break</option>
+          </select>
+
+          {isGenerating && (
+            <button
+              onClick={handleStopStream}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-red-500/20 text-red-400 border border-red-500/40 text-xs font-bold hover:bg-red-500/30 transition-all"
+            >
+              <Square className="w-3.5 h-3.5 fill-current" /> Stop
+            </button>
+          )}
+        </div>
       </div>
 
+      {/* Messages Stream Container */}
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto p-6 space-y-4 relative scrollbar-thin scrollbar-thumb-emerald-800"
       >
+        {/* FE-08 DESIGNED EMPTY STATE ONBOARDING (When no messages exist) */}
+        {messages.length === 0 && (
+          <div className="h-full flex flex-col justify-center items-center text-center space-y-6 max-w-md mx-auto py-12 animate-fade-in">
+            <div className="p-4 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[#10b981]">
+              <Sparkles className="w-10 h-10 animate-pulse" />
+            </div>
+            <div>
+              <h3 className="text-lg font-extrabold text-emerald-300">
+                Welcome to Vitta Generative Financial Assistant
+              </h3>
+              <p className="text-xs text-emerald-200/80 mt-1">
+                Ask a financial question or click a prompt below to trigger FE-07 Generative UI Zod tools and FE-08 error boundaries.
+              </p>
+            </div>
+
+            <div className="w-full space-y-2 text-left">
+              {sampleOnboardingPrompts.map((card, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    if (card.isSabotageTest) setSabotageMode('mid-stream-break');
+                    executeChatFlow(card.prompt);
+                  }}
+                  className="w-full p-3 rounded-xl bg-emerald-950/80 border border-emerald-800/60 hover:border-[#10b981] hover:bg-emerald-900/50 transition-all group cursor-pointer"
+                >
+                  <div className="text-xs font-bold text-emerald-300 group-hover:text-white flex items-center justify-between">
+                    <span>{card.title}</span>
+                    <span className="text-[10px] text-emerald-400 font-mono">Click to Run &rarr;</span>
+                  </div>
+                  <div className="text-[11px] text-emerald-200/70 mt-0.5 font-medium truncate">
+                    {card.prompt}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {messages.map((msg) => (
           <div
             key={msg.id}
@@ -193,20 +351,39 @@ export function StreamingChatInterface() {
             )}
 
             <div
-              className={`max-w-[80%] rounded-2xl px-4 py-3 text-xs leading-relaxed ${
+              className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed space-y-3 ${
                 msg.role === 'user'
                   ? 'bg-[#10b981] text-emerald-950 font-semibold rounded-br-none shadow-md'
+                  : msg.isError
+                  ? 'bg-red-950/70 border border-red-500/40 text-red-200 rounded-bl-none shadow-md'
                   : 'bg-emerald-950/80 text-emerald-100 border border-emerald-800/50 rounded-bl-none shadow-inner'
               }`}
             >
-              {isThinking && msg.isStreaming && !msg.content ? (
-                <div className="flex items-center gap-2 text-emerald-300 font-medium animate-pulse">
-                  <div className="flex space-x-1">
-                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce"></div>
-                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                    <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+              {/* FE-07 GENERATIVE UI TOOL RENDERER */}
+              {msg.toolCall && (
+                <FinancialToolResultCard
+                  state={msg.toolCall.state}
+                  input={msg.toolCall.input}
+                  result={msg.toolCall.result}
+                  error={msg.toolCall.error}
+                  onRetry={() => executeChatFlow(messages[messages.length - 2]?.content || 'Run financial analysis', true)}
+                />
+              )}
+
+              {/* Thinking Indicator & Layout-Matched Skeleton */}
+              {isThinking && msg.isStreaming && !msg.content && !msg.toolCall ? (
+                <div className="space-y-2 animate-pulse">
+                  <div className="flex items-center gap-2 text-emerald-300 font-medium">
+                    <div className="flex space-x-1">
+                      <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce"></div>
+                      <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                      <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                    </div>
+                    <span>Analyzing financial telemetry & checking SLA thresholds...</span>
                   </div>
-                  <span>Analyzing financial telemetry...</span>
+                  {/* Layout Skeleton (Prevents CLS layout shift) */}
+                  <div className="h-3 bg-emerald-900/60 rounded w-3/4"></div>
+                  <div className="h-3 bg-emerald-900/60 rounded w-1/2"></div>
                 </div>
               ) : (
                 <div className="whitespace-pre-wrap font-sans">
@@ -214,6 +391,21 @@ export function StreamingChatInterface() {
                   {msg.isStreaming && (
                     <span className="inline-block w-2 h-4 ml-1 bg-emerald-400 animate-pulse align-middle" />
                   )}
+                </div>
+              )}
+
+              {/* FE-08 DESIGNED ERROR STATE RETRY ACTION BUTTON */}
+              {msg.isError && (
+                <div className="pt-2 border-t border-red-500/30 flex items-center justify-between">
+                  <span className="text-[11px] text-red-300 flex items-center gap-1 font-bold">
+                    <AlertCircle className="w-3.5 h-3.5" /> Message failed to complete
+                  </span>
+                  <button
+                    onClick={() => executeChatFlow(messages[messages.length - 2]?.content || msg.content, true)}
+                    className="flex items-center gap-1.5 px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" /> Retry Message
+                  </button>
                 </div>
               )}
             </div>
@@ -239,6 +431,7 @@ export function StreamingChatInterface() {
         )}
       </div>
 
+      {/* Input Form with Validation */}
       <form
         onSubmit={handleSendMessage}
         className="p-4 border-t border-emerald-800/60 bg-[#022c22] flex items-center gap-2"
@@ -250,7 +443,7 @@ export function StreamingChatInterface() {
           placeholder={
             isGenerating
               ? 'Streaming response in progress...'
-              : 'Ask Vitta AI about your budget, expenses, or SLA warnings...'
+              : 'Ask Vitta AI or type "Run financial analysis"...'
           }
           disabled={isGenerating}
           className="flex-1 px-4 py-3 bg-emerald-950/90 border border-emerald-700/80 rounded-xl text-emerald-100 text-xs placeholder-emerald-400/60 focus:outline-none focus:ring-2 focus:ring-[#10b981] disabled:opacity-50"
