@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Square, ArrowDown, Bot, User, Sparkles, AlertCircle, RefreshCw, Zap, ShieldAlert } from 'lucide-react';
+import { Send, Square, ArrowDown, Bot, User, Sparkles, AlertCircle, RefreshCw, Zap } from 'lucide-react';
 import { FinancialToolResultCard, ToolState } from './FinancialToolResultCard';
 import { executeFinancialAnalysis, FinancialAnalysisResult } from '@/lib/tools';
 
@@ -114,7 +114,6 @@ export function StreamingChatInterface() {
     };
 
     if (isRetry) {
-      // Replace last error message if retrying
       setMessages((prev) => [...prev.filter((m) => !m.isError), userMsg, initialAssistantMsg]);
     } else {
       setMessages((prev) => [...prev, userMsg, initialAssistantMsg]);
@@ -127,13 +126,11 @@ export function StreamingChatInterface() {
     abortControllerRef.current = controller;
 
     try {
-      // FE-08 Sabotage Test 1: Rate Limit Error (429)
       if (sabotageMode === 'rate-limit') {
         await new Promise((r) => setTimeout(r, 600));
         throw new Error('429 Too Many Requests: API rate limit exceeded. Please retry in a moment.');
       }
 
-      // FE-07 Tool Call Execution Simulation Phase
       if (isToolTrigger) {
         await new Promise((r) => setTimeout(r, 800));
         setMessages((prev) =>
@@ -197,7 +194,6 @@ export function StreamingChatInterface() {
         if (done) break;
 
         chunkCount++;
-        // FE-08 Sabotage Test 2: Mid-Stream Connection Break
         if (sabotageMode === 'mid-stream-break' && chunkCount > 5) {
           controller.abort();
           throw new Error('Stream interrupted: Network connection killed mid-stream.');
@@ -250,32 +246,31 @@ export function StreamingChatInterface() {
   };
 
   return (
-    <div className="flex flex-col h-[80dvh] max-h-[700px] w-full max-w-4xl mx-auto rounded-2xl bg-[#022c22]/95 border border-emerald-800/60 shadow-2xl overflow-hidden font-sans">
+    <div className="flex flex-col h-[80dvh] max-h-[700px] w-full max-w-4xl mx-auto rounded-2xl bg-[var(--bg-app)] border border-[var(--border-app)] shadow-2xl overflow-hidden font-sans transition-colors duration-300">
       {/* Header with Sabotage Test Controls */}
-      <div className="flex flex-wrap items-center justify-between px-6 py-4 border-b border-emerald-800/60 bg-[#022c22] gap-3">
+      <div className="flex flex-wrap items-center justify-between px-6 py-4 border-b border-[var(--border-card)] bg-[var(--bg-app)] gap-3">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-emerald-500/20 text-[#10b981] border border-emerald-500/30">
+          <div className="p-2 rounded-xl bg-emerald-500/10 text-[#10b981] border border-emerald-500/20">
             <Bot className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-base font-extrabold text-emerald-400 flex items-center gap-2">
+            <h2 className="text-base font-extrabold text-[#10b981] flex items-center gap-2">
               Vitta Generative UI & Resilient Chat <Sparkles className="w-4 h-4 text-amber-400" />
             </h2>
-            <p className="text-[11px] text-emerald-200/70 font-medium">
+            <p className="text-[11px] text-[var(--text-muted)] font-medium">
               FE-07 Zod Tools & FE-08 Error Recovery (Checkpoint 1)
             </p>
           </div>
         </div>
 
-        {/* Sabotage Test Selector for Reviewer Evaluation */}
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold text-emerald-300 flex items-center gap-1">
+          <span className="text-[10px] font-bold text-[var(--text-main)] flex items-center gap-1">
             <Zap className="w-3 h-3 text-amber-400" /> Sabotage Mode:
           </span>
           <select
             value={sabotageMode}
             onChange={(e) => setSabotageMode(e.target.value as any)}
-            className="px-2.5 py-1 bg-emerald-950 border border-emerald-700 rounded-lg text-emerald-100 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-[#10b981]"
+            className="px-2.5 py-1 bg-[var(--bg-input)] border border-[var(--border-card)] rounded-lg text-[var(--text-main)] text-xs font-bold focus:outline-none focus:ring-1 focus:ring-[#10b981]"
           >
             <option value="none">Off (Normal)</option>
             <option value="rate-limit">Test 429 Error</option>
@@ -299,17 +294,16 @@ export function StreamingChatInterface() {
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto p-6 space-y-4 relative scrollbar-thin scrollbar-thumb-emerald-800"
       >
-        {/* FE-08 DESIGNED EMPTY STATE ONBOARDING (When no messages exist) */}
         {messages.length === 0 && (
           <div className="h-full flex flex-col justify-center items-center text-center space-y-6 max-w-md mx-auto py-12 animate-fade-in">
             <div className="p-4 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[#10b981]">
               <Sparkles className="w-10 h-10 animate-pulse" />
             </div>
             <div>
-              <h3 className="text-lg font-extrabold text-emerald-300">
+              <h3 className="text-lg font-extrabold text-[var(--text-main)]">
                 Welcome to Vitta Generative Financial Assistant
               </h3>
-              <p className="text-xs text-emerald-200/80 mt-1">
+              <p className="text-xs text-[var(--text-muted)] mt-1">
                 Ask a financial question or click a prompt below to trigger FE-07 Generative UI Zod tools and FE-08 error boundaries.
               </p>
             </div>
@@ -322,13 +316,13 @@ export function StreamingChatInterface() {
                     if (card.isSabotageTest) setSabotageMode('mid-stream-break');
                     executeChatFlow(card.prompt);
                   }}
-                  className="w-full p-3 rounded-xl bg-emerald-950/80 border border-emerald-800/60 hover:border-[#10b981] hover:bg-emerald-900/50 transition-all group cursor-pointer"
+                  className="w-full p-3 rounded-xl bg-[var(--bg-input)] border border-[var(--border-card)] hover:border-[#10b981] hover:bg-[var(--badge-bg)] transition-all group cursor-pointer"
                 >
-                  <div className="text-xs font-bold text-emerald-300 group-hover:text-white flex items-center justify-between">
+                  <div className="text-xs font-bold text-[var(--text-main)] group-hover:text-[#10b981] flex items-center justify-between">
                     <span>{card.title}</span>
-                    <span className="text-[10px] text-emerald-400 font-mono">Click to Run &rarr;</span>
+                    <span className="text-[10px] text-[#10b981] font-mono">Click to Run &rarr;</span>
                   </div>
-                  <div className="text-[11px] text-emerald-200/70 mt-0.5 font-medium truncate">
+                  <div className="text-[11px] text-[var(--text-muted)] mt-0.5 font-medium truncate">
                     {card.prompt}
                   </div>
                 </button>
@@ -345,7 +339,7 @@ export function StreamingChatInterface() {
             }`}
           >
             {msg.role === 'assistant' && (
-              <div className="w-8 h-8 rounded-full bg-emerald-950 border border-emerald-700 flex items-center justify-center text-emerald-400 shrink-0 mt-1">
+              <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[#10b981] shrink-0 mt-1">
                 <Bot className="w-4 h-4" />
               </div>
             )}
@@ -353,13 +347,12 @@ export function StreamingChatInterface() {
             <div
               className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed space-y-3 ${
                 msg.role === 'user'
-                  ? 'bg-[#10b981] text-emerald-950 font-semibold rounded-br-none shadow-md'
+                  ? 'bg-gradient-to-r from-[#10b981] to-[#059669] text-white font-semibold rounded-br-none shadow-md'
                   : msg.isError
                   ? 'bg-red-950/70 border border-red-500/40 text-red-200 rounded-bl-none shadow-md'
-                  : 'bg-emerald-950/80 text-emerald-100 border border-emerald-800/50 rounded-bl-none shadow-inner'
+                  : 'bg-[var(--sub-panel-bg)] text-[var(--text-main)] border border-[var(--border-card)] rounded-bl-none shadow-sm'
               }`}
             >
-              {/* FE-07 GENERATIVE UI TOOL RENDERER */}
               {msg.toolCall && (
                 <FinancialToolResultCard
                   state={msg.toolCall.state}
@@ -370,31 +363,28 @@ export function StreamingChatInterface() {
                 />
               )}
 
-              {/* Thinking Indicator & Layout-Matched Skeleton */}
               {isThinking && msg.isStreaming && !msg.content && !msg.toolCall ? (
                 <div className="space-y-2 animate-pulse">
-                  <div className="flex items-center gap-2 text-emerald-300 font-medium">
+                  <div className="flex items-center gap-2 text-[#10b981] font-medium">
                     <div className="flex space-x-1">
-                      <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce"></div>
-                      <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-                      <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                      <div className="w-1.5 h-1.5 bg-[#10b981] rounded-full animate-bounce"></div>
+                      <div className="w-1.5 h-1.5 bg-[#10b981] rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                      <div className="w-1.5 h-1.5 bg-[#10b981] rounded-full animate-bounce [animation-delay:0.4s]"></div>
                     </div>
                     <span>Analyzing financial telemetry & checking SLA thresholds...</span>
                   </div>
-                  {/* Layout Skeleton (Prevents CLS layout shift) */}
-                  <div className="h-3 bg-emerald-900/60 rounded w-3/4"></div>
-                  <div className="h-3 bg-emerald-900/60 rounded w-1/2"></div>
+                  <div className="h-3 bg-[var(--badge-bg)] rounded w-3/4"></div>
+                  <div className="h-3 bg-[var(--badge-bg)] rounded w-1/2"></div>
                 </div>
               ) : (
                 <div className="whitespace-pre-wrap font-sans">
                   {msg.content}
                   {msg.isStreaming && (
-                    <span className="inline-block w-2 h-4 ml-1 bg-emerald-400 animate-pulse align-middle" />
+                    <span className="inline-block w-2 h-4 ml-1 bg-[#10b981] animate-pulse align-middle" />
                   )}
                 </div>
               )}
 
-              {/* FE-08 DESIGNED ERROR STATE RETRY ACTION BUTTON */}
               {msg.isError && (
                 <div className="pt-2 border-t border-red-500/30 flex items-center justify-between">
                   <span className="text-[11px] text-red-300 flex items-center gap-1 font-bold">
@@ -411,7 +401,7 @@ export function StreamingChatInterface() {
             </div>
 
             {msg.role === 'user' && (
-              <div className="w-8 h-8 rounded-full bg-emerald-500 text-emerald-950 flex items-center justify-center font-bold text-xs shrink-0 mt-1">
+              <div className="w-8 h-8 rounded-full bg-[#10b981] text-white flex items-center justify-center font-bold text-xs shrink-0 mt-1">
                 <User className="w-4 h-4" />
               </div>
             )}
@@ -424,17 +414,16 @@ export function StreamingChatInterface() {
               userHasScrolledUpRef.current = false;
               scrollToBottom(true);
             }}
-            className="sticky bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-emerald-950 font-extrabold text-xs rounded-full shadow-lg border border-emerald-400 hover:bg-emerald-400 transition-all z-20 animate-bounce"
+            className="sticky bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-[#10b981] text-white font-extrabold text-xs rounded-full shadow-lg border border-emerald-400 hover:bg-emerald-600 transition-all z-20 animate-bounce"
           >
             <ArrowDown className="w-3.5 h-3.5" /> Jump to Latest
           </button>
         )}
       </div>
 
-      {/* Input Form with Validation */}
       <form
         onSubmit={handleSendMessage}
-        className="p-4 border-t border-emerald-800/60 bg-[#022c22] flex items-center gap-2"
+        className="p-4 border-t border-[var(--border-card)] bg-[var(--bg-app)] flex items-center gap-2"
       >
         <input
           type="text"
@@ -446,7 +435,7 @@ export function StreamingChatInterface() {
               : 'Ask Vitta AI or type "Run financial analysis"...'
           }
           disabled={isGenerating}
-          className="flex-1 px-4 py-3 bg-emerald-950/90 border border-emerald-700/80 rounded-xl text-emerald-100 text-xs placeholder-emerald-400/60 focus:outline-none focus:ring-2 focus:ring-[#10b981] disabled:opacity-50"
+          className="flex-1 px-4 py-3 bg-[var(--bg-input)] border border-[var(--border-card)] rounded-xl text-[var(--text-main)] text-xs placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#10b981] disabled:opacity-50"
         />
 
         {isGenerating ? (
@@ -463,7 +452,7 @@ export function StreamingChatInterface() {
             type="submit"
             disabled={!input.trim()}
             aria-label="Send message"
-            className="p-3 bg-[#10b981] text-emerald-950 font-bold rounded-xl hover:bg-emerald-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md"
+            className="p-3 bg-gradient-to-r from-[#10b981] to-[#059669] text-white font-bold rounded-xl hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md"
           >
             <Send className="w-4 h-4" />
           </button>

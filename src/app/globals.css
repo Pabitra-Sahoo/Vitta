@@ -8,37 +8,41 @@
 /* Dark Emerald Finance Mode */
 body.dark-mode {
   --bg-page: radial-gradient(circle at 50% -10%, #064e3b 0%, #022c22 50%, #061e19 85%);
-  --bg-app: rgba(6, 30, 25, 0.75);
-  --bg-card: rgba(6, 78, 59, 0.25);
-  --bg-input: rgba(4, 40, 32, 0.6);
-  --border-app: rgba(16, 185, 129, 0.2);
-  --border-card: rgba(16, 185, 129, 0.15);
+  --bg-app: rgba(6, 30, 25, 0.92);
+  --bg-card: rgba(6, 78, 59, 0.35);
+  --bg-input: rgba(4, 40, 32, 0.7);
+  --border-app: rgba(16, 185, 129, 0.25);
+  --border-card: rgba(16, 185, 129, 0.2);
   --text-main: #ecfdf5;
   --text-muted: #10b981;
-  --text-dim: #6ee7b7;
+  --text-dim: #a7f3d0;
   --shadow-app: 0 30px 60px -15px rgba(2, 44, 34, 0.9);
   --pill-active-bg: linear-gradient(135deg, #10b981, #059669);
   --badge-bg: rgba(16, 185, 129, 0.15);
   --accent-color: #10b981;
-  --sub-panel-bg: rgba(4, 40, 32, 0.5);
+  --sub-panel-bg: rgba(4, 40, 32, 0.6);
+  --chat-bg: #022c22;
+  --chat-msg-bot: rgba(6, 78, 59, 0.4);
 }
 
 /* Light Finance Mode */
 body.light-mode {
   --bg-page: radial-gradient(circle at 50% 0%, #d1fae5 0%, #ecfdf5 60%, #f0fdf4 100%);
-  --bg-app: rgba(255, 255, 255, 0.9);
+  --bg-app: rgba(255, 255, 255, 0.95);
   --bg-card: #ffffff;
-  --bg-input: #ecfdf5;
-  --border-app: rgba(16, 185, 129, 0.25);
-  --border-card: rgba(16, 185, 129, 0.18);
-  --text-main: #064e3b;
+  --bg-input: #e6f4ea;
+  --border-app: rgba(16, 185, 129, 0.3);
+  --border-card: rgba(16, 185, 129, 0.22);
+  --text-main: #022c22;
   --text-muted: #047857;
   --text-dim: #065f46;
   --shadow-app: 0 20px 40px -10px rgba(16, 185, 129, 0.15);
   --pill-active-bg: linear-gradient(135deg, #10b981, #047857);
-  --badge-bg: rgba(16, 185, 129, 0.12);
-  --accent-color: #047857;
-  --sub-panel-bg: #ecfdf5;
+  --badge-bg: rgba(16, 185, 129, 0.14);
+  --accent-color: #059669;
+  --sub-panel-bg: #f0fdf4;
+  --chat-bg: #ffffff;
+  --chat-msg-bot: #f0fdf4;
 }
 
 * {
@@ -59,6 +63,7 @@ body {
   border-radius: 20px;
   padding: 1.5rem;
   transition: all 0.22s ease;
+  color: var(--text-main);
 }
 
 .vitta-card:hover {

@@ -30,7 +30,6 @@ export function Navbar() {
     document.body.className = `${savedTheme}-mode`;
   }, []);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
@@ -52,18 +51,18 @@ export function Navbar() {
   ];
 
   return (
-    <header className="w-full bg-[var(--bg-app)] border-b border-[var(--border-app)] backdrop-blur-xl sticky top-0 z-50 px-4 md:px-8 py-3.5 transition-all">
+    <header className="w-full bg-[var(--bg-app)] border-b border-[var(--border-app)] backdrop-blur-xl sticky top-0 z-50 px-4 md:px-8 py-3.5 transition-all shadow-sm">
       <div className="max-w-6xl mx-auto flex items-center justify-between">
-        {/* Brand Logo & Subtitle */}
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="p-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 group-hover:scale-105 transition-transform">
+        {/* Brand Logo & Subtitle — Perfect Flex Alignment & High-Contrast Gradient */}
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 group-hover:scale-105 transition-transform flex items-center justify-center shrink-0">
             <Wallet className="w-6 h-6 md:w-7 md:h-7 text-[#10b981]" />
           </div>
-          <div>
-            <span className="text-xl md:text-2xl font-extrabold tracking-tight bg-gradient-to-r from-[#a7f3d0] via-[#10b981] to-[#047857] bg-clip-text text-transparent">
+          <div className="flex items-center gap-2">
+            <span className="text-xl md:text-2xl font-extrabold tracking-tight bg-gradient-to-r from-[#059669] via-[#10b981] to-[#047857] dark:from-[#a7f3d0] dark:via-[#10b981] dark:to-[#047857] bg-clip-text text-transparent">
               Vitta
             </span>
-            <span className="hidden sm:inline-block text-[10px] font-semibold text-[#10b981] ml-2 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+            <span className="hidden sm:inline-flex items-center text-[10px] font-extrabold text-[#10b981] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 leading-none">
               Next.js Finance
             </span>
           </div>
@@ -77,10 +76,10 @@ export function Navbar() {
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all ${
                   isActive
                     ? 'bg-gradient-to-r from-[#10b981] to-[#059669] text-white shadow-md'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--badge-bg)]'
+                    : 'text-[var(--text-main)] hover:text-[#10b981] hover:bg-[var(--badge-bg)]'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -95,7 +94,7 @@ export function Navbar() {
           {mounted && (
             <button
               onClick={toggleTheme}
-              className="w-9 h-9 flex items-center justify-center rounded-xl bg-[var(--badge-bg)] border border-[var(--border-card)] text-[#10b981] hover:border-[var(--accent-color)] transition-all cursor-pointer"
+              className="w-9 h-9 flex items-center justify-center rounded-xl bg-[var(--badge-bg)] border border-[var(--border-card)] text-[#10b981] hover:border-[#10b981] transition-all cursor-pointer shadow-sm"
               aria-label="Toggle Light and Dark Mode"
               title={themeMode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
@@ -103,22 +102,21 @@ export function Navbar() {
             </button>
           )}
 
-          {/* Mobile Hamburger Toggle Button */}
           <button
             onClick={() => setMobileMenuOpen((prev) => !prev)}
             aria-expanded={mobileMenuOpen}
             aria-label="Toggle mobile menu navigation"
-            className="lg:hidden p-2 rounded-xl bg-[var(--badge-bg)] border border-[var(--border-card)] text-emerald-400 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-[#10b981]"
+            className="lg:hidden p-2 rounded-xl bg-[var(--badge-bg)] border border-[var(--border-card)] text-[#10b981] hover:text-[var(--text-main)] transition-all focus:outline-none focus:ring-2 focus:ring-[#10b981]"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Drawer Dropdown Menu */}
+      {/* Mobile Drawer Dropdown Menu — Using CSS Theme Variables */}
       {mobileMenuOpen && (
         <div className="lg:hidden mt-3 pt-3 border-t border-[var(--border-card)] animate-fade-in">
-          <nav className="flex flex-col space-y-1 bg-[#022c22]/95 border border-emerald-800/60 p-3 rounded-2xl shadow-2xl backdrop-blur-xl">
+          <nav className="flex flex-col space-y-1 bg-[var(--bg-app)] border border-[var(--border-card)] p-3 rounded-2xl shadow-2xl backdrop-blur-xl">
             {navLinks.map(({ href, label, icon: Icon }) => {
               const isActive = pathname === href;
               return (
@@ -128,11 +126,11 @@ export function Navbar() {
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
                     isActive
-                      ? 'bg-gradient-to-r from-[#10b981] to-[#059669] text-emerald-950 font-extrabold shadow-md'
-                      : 'text-emerald-200 hover:bg-emerald-900/50 hover:text-white'
+                      ? 'bg-gradient-to-r from-[#10b981] to-[#059669] text-white font-extrabold shadow-md'
+                      : 'text-[var(--text-main)] hover:bg-[var(--badge-bg)] hover:text-[#10b981]'
                   }`}
                 >
-                  <Icon className="w-4 h-4 text-emerald-400" />
+                  <Icon className="w-4 h-4 text-[#10b981]" />
                   <span>{label}</span>
                 </Link>
               );
