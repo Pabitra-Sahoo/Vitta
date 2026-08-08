@@ -5,44 +5,50 @@
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Dark Emerald Finance Mode */
+/* ==========================================================================
+   DARK MODE — Obsidian & Deep Emerald Palette
+   ========================================================================== */
 body.dark-mode {
-  --bg-page: radial-gradient(circle at 50% -10%, #064e3b 0%, #022c22 50%, #061e19 85%);
-  --bg-app: rgba(6, 30, 25, 0.92);
-  --bg-card: rgba(6, 78, 59, 0.35);
-  --bg-input: rgba(4, 40, 32, 0.7);
-  --border-app: rgba(16, 185, 129, 0.25);
-  --border-card: rgba(16, 185, 129, 0.2);
-  --text-main: #ecfdf5;
-  --text-muted: #10b981;
-  --text-dim: #a7f3d0;
-  --shadow-app: 0 30px 60px -15px rgba(2, 44, 34, 0.9);
+  --bg-page: #04130e;
+  --bg-app: rgba(6, 30, 23, 0.85);
+  --bg-card: rgba(8, 45, 35, 0.45);
+  --bg-input: #06241a;
+  --border-app: rgba(16, 185, 129, 0.2);
+  --border-card: rgba(16, 185, 129, 0.16);
+  --text-main: #f0fdf4;
+  --text-muted: #6ee7b7;
+  --text-dim: #34d399;
+  --shadow-app: 0 20px 50px -10px rgba(0, 0, 0, 0.7);
   --pill-active-bg: linear-gradient(135deg, #10b981, #059669);
   --badge-bg: rgba(16, 185, 129, 0.15);
   --accent-color: #10b981;
-  --sub-panel-bg: rgba(4, 40, 32, 0.6);
-  --chat-bg: #022c22;
-  --chat-msg-bot: rgba(6, 78, 59, 0.4);
+  --sub-panel-bg: rgba(6, 35, 27, 0.6);
+  --chat-bg: #031c15;
+  --chat-msg-bot: rgba(6, 45, 35, 0.6);
+  --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
 }
 
-/* Light Finance Mode */
+/* ==========================================================================
+   LIGHT MODE — Ultra-Clean Crisp Slate & Mint Palette (Maximum Legibility)
+   ========================================================================== */
 body.light-mode {
-  --bg-page: radial-gradient(circle at 50% 0%, #d1fae5 0%, #ecfdf5 60%, #f0fdf4 100%);
-  --bg-app: rgba(255, 255, 255, 0.95);
+  --bg-page: #f4f9f6;
+  --bg-app: #ffffff;
   --bg-card: #ffffff;
-  --bg-input: #e6f4ea;
-  --border-app: rgba(16, 185, 129, 0.3);
-  --border-card: rgba(16, 185, 129, 0.22);
-  --text-main: #022c22;
-  --text-muted: #047857;
-  --text-dim: #065f46;
-  --shadow-app: 0 20px 40px -10px rgba(16, 185, 129, 0.15);
-  --pill-active-bg: linear-gradient(135deg, #10b981, #047857);
-  --badge-bg: rgba(16, 185, 129, 0.14);
+  --bg-input: #f0fdf4;
+  --border-app: #cbd5e1;
+  --border-card: #e2e8f0;
+  --text-main: #0f172a; /* Deep Charcoal for Maximum Readability */
+  --text-muted: #334155; /* Dark Slate Subtext */
+  --text-dim: #047857; /* Rich Emerald Accent */
+  --shadow-app: 0 10px 30px -5px rgba(0, 0, 0, 0.06);
+  --pill-active-bg: linear-gradient(135deg, #059669, #047857);
+  --badge-bg: #e6f4ea;
   --accent-color: #059669;
-  --sub-panel-bg: #f0fdf4;
+  --sub-panel-bg: #f8fafc;
   --chat-bg: #ffffff;
-  --chat-msg-bot: #f0fdf4;
+  --chat-msg-bot: #f1f5f9;
+  --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
 }
 
 * {
@@ -54,9 +60,10 @@ body {
   min-height: 100vh;
   background: var(--bg-page);
   color: var(--text-main);
-  transition: background 0.3s ease, color 0.3s ease;
+  transition: background 0.25s ease, color 0.25s ease;
 }
 
+/* Base Card Styling with Dynamic Theme Support */
 .vitta-card {
   background: var(--bg-card);
   border: 1px solid var(--border-card);
@@ -64,11 +71,12 @@ body {
   padding: 1.5rem;
   transition: all 0.22s ease;
   color: var(--text-main);
+  box-shadow: var(--card-shadow);
 }
 
 .vitta-card:hover {
   border-color: var(--accent-color);
-  box-shadow: 0 12px 30px -10px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 12px 30px -10px rgba(16, 185, 129, 0.15);
 }
 
 .scrollable-list {
