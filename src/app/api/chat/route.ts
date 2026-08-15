@@ -1,12 +1,8 @@
 import { NextRequest } from 'next/server';
-import dns from 'dns';
+import { streamText, tool } from 'ai';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { VITTA_AI_SYSTEM_PROMPT } from '@/lib/aiConfig';
-
-try {
-  dns.setDefaultResultOrder('ipv4first');
-} catch (e) {
-  // Ignore if not supported
-}
+import { FinancialAnalysisInputSchema, executeFinancialAnalysis } from '@/lib/tools';
 
 export const runtime = 'nodejs';
 
@@ -21,93 +17,38 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const lastMessage = messages[messages.length - 1]?.content || 'Hello';
-    const apiKey = process.env.GEMINI_API_KEY || process.env.OPENROUTER_API_KEY || process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY || '';
 
-    const encoder = new TextEncoder();
-
-    const stream = new ReadableStream({
-      async start(controller) {
-        let aiResponseText = '';
-
-        if (apiKey && apiKey !== 'your_gemini_api_key_here') {
-          // List of official Google Gemini REST endpoints to try
-          const endpointsToTry = [
-            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${apiKey}`,
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
-          ];
-
-          for (const url of endpointsToTry) {
-            try {
-              console.log(`[DEBUG] Attempting Gemini API call:`, url.substring(0, 65));
-              const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  contents: [
-                    {
-                      role: 'user',
-                      parts: [{ text: `${VITTA_AI_SYSTEM_PROMPT}\n\nUser Question: ${lastMessage}` }],
-                    },
-                  ],
-                }),
-              });
-
-              console.log(`[DEBUG] HTTP status: ${response.status}`);
-
-              if (response.ok) {
-                const data = await response.json();
-                aiResponseText =
-                  data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-                if (aiResponseText) {
-                  console.log(`[DEBUG] SUCCESS! Generated text length: ${aiResponseText.length}`);
-                  break; // Got response!
-                }
-              } else {
-                const errText = await response.text();
-                console.error(`[DEBUG] API Error Response: ${errText.substring(0, 200)}`);
-              }
-            } catch (err) {
-              console.error(`[DEBUG] Fetch exception:`, err);
-            }
-          }
-        }
-
-        // Fallback response if API key is unconfigured or fails
-        if (!aiResponseText) {
-          aiResponseText = `Welcome to Vitta AI Financial Analytics. 
-
-Regarding your question ("${lastMessage}"):
-
-• **Budget & Net Balance Status**: Your monthly SLA limit is set to **$2,500.00**.
-• **Category Analysis**: Housing and Dining out represent 65% of monthly expenditures.
-• **Financial Recommendation**: Maintaining a 15% emergency reserve buffer will keep your financial health score optimal above the 85th percentile.
-
-Is there any specific transaction category or SLA budget limit warning you would like me to recalculate?`;
-        }
-
-        // Stream tokens cleanly word by word
-        const chunks = aiResponseText.split(' ');
-        for (let i = 0; i < chunks.length; i++) {
-          const token = (i === 0 ? '' : ' ') + chunks[i];
-          controller.enqueue(encoder.encode(token));
-          await new Promise((resolve) => setTimeout(resolve, 30));
-        }
-
-        controller.close();
+    // Initialize Google AI provider with custom header for AQ.Ab8 keys
+    const google = createGoogleGenerativeAI({
+      apiKey,
+      fetch: (input, init) => {
+        const headers = new Headers(init?.headers);
+        headers.set('x-goog-api-key', apiKey);
+        return fetch(input, { ...init, headers });
       },
     });
 
-    return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream; charset=utf-8',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
+    const result = streamText({
+      model: google('gemini-1.5-flash'),
+      system: VITTA_AI_SYSTEM_PROMPT,
+      messages,
+      tools: {
+        calculateCategoryBudgetAnalysis: tool({
+          description: 'Analyzes financial category budget, spending, and SLA limits to provide a health score and recommendation.',
+          parameters: FinancialAnalysisInputSchema,
+          execute: async (input) => {
+            // Add an artificial delay so the user can see the "input-available" execution state
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            return executeFinancialAnalysis(input);
+          },
+        }),
       },
     });
+
+    return result.toDataStreamResponse();
   } catch (error) {
+    console.error('[DEBUG] streamText error:', error);
     return new Response(JSON.stringify({ error: 'Failed to process streaming chat' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
